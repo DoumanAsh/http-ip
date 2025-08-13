@@ -1,0 +1,17 @@
+[package]
+name = "http-ip"
+version = "0.1.0"
+authors = ["Douman <douman@gmx.se>"]
+edition = "2024"
+rust-version = "1.85.0"
+description = "Utilities to determine client IP"
+readme = "README.md"
+repository = "https://github.com/DoumanAsh/http-ip"
+license = "BSL-1.0"
+keywords = ["http", "ip"]
+include = [
+    "**/*.rs",
+    "Cargo.toml",
+    "README.md",
+    "LICENSE",
+]
