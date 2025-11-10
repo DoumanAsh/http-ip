@@ -1,4 +1,6 @@
 //! Axum 0.8 extension module
+//!
+//! Provides [ClientIp](struct.ClientIp.html) to extract client's ip using filters
 
 use core::{fmt, marker};
 use core::net::{IpAddr, SocketAddr};
@@ -51,13 +53,13 @@ use crate::http::HeaderMapClientIp;
 ///};
 ///let app: Router<MyState> = Router::new().route("/users", get(create_user)).with_state(state);
 ///```
-pub struct ClientIp<F> {
+pub struct ClientIp<F: Filter> {
     ///Underlying IP addr if available
     pub inner: Option<IpAddr>,
     _filter: marker::PhantomData<F>
 }
 
-impl<F> ClientIp<F> {
+impl<F: Filter> ClientIp<F> {
     #[inline(always)]
     fn new(inner: Option<IpAddr>) -> Self {
         Self {
@@ -73,7 +75,7 @@ impl<F> ClientIp<F> {
     }
 }
 
-impl<F> fmt::Debug for ClientIp<F> {
+impl<F: Filter> fmt::Debug for ClientIp<F> {
     #[inline(always)]
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(&self.inner, fmt)

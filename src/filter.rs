@@ -18,6 +18,7 @@ pub trait Filter: Sized {
 
 impl Filter for () {
     #[inline(always)]
+    ///NULL filter, never matching
     fn is_match(&self, _: IpAddr) -> bool {
         false
     }
