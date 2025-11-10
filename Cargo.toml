@@ -1,6 +1,6 @@
 [package]
 name = "http-ip"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Douman <douman@gmx.se>"]
 edition = "2024"
 rust-version = "1.85.0"
@@ -31,13 +31,25 @@ features = ["tokio"]
 version = "0.8"
 optional = true
 
+[dependencies.tonic014]
+package = "tonic"
+default-features = false
+version = "0.14"
+optional = true
+
 [features]
 http = ["dep:http"]
 axum08 = ["dep:axum08", "http"]
+tonic014 = ["dep:tonic014"]
 
 [[test]]
 name = "http"
 required-features = ["http"]
 
+[[test]]
+name = "tonic014"
+required-features = ["tonic014"]
+
+
 [package.metadata.docs.rs]
-features = ["http", "axum08"]
+features = ["http", "axum08", "tonic014"]

@@ -1,20 +1,21 @@
-//! HTTP extension module
+//! Tonic 0.14 extension module
 
 use core::fmt;
 use core::net::IpAddr;
+
+pub use tonic014 as tonic;
+pub use tonic::metadata::MetadataMap;
 
 use crate::forwarded::{self, parse_forwarded_for, parse_forwarded_for_rev};
 use crate::filter::Filter;
 use crate::shared::FALLBACK_STR;
 
-///Re-export of [http](https://crates.io/crates/http)
-pub use http as http_ext;
-use http_ext::header::FORWARDED;
+const FORWARDED: &str = "forwarded";
 
 ///FMT formatter for header values
-pub struct HeaderValueFmt<'a>(http_ext::header::GetAll<'a, http_ext::header::HeaderValue>);
+pub struct MetadataValueFmt<'a>(tonic::metadata::GetAll<'a, tonic::metadata::Ascii>);
 
-impl fmt::Debug for HeaderValueFmt<'_> {
+impl fmt::Debug for MetadataValueFmt<'_> {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut out = fmt.debug_list();
         for header in self.0.iter() {
@@ -28,7 +29,7 @@ impl fmt::Debug for HeaderValueFmt<'_> {
     }
 }
 
-impl fmt::Display for HeaderValueFmt<'_> {
+impl fmt::Display for MetadataValueFmt<'_> {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut headers = self.0.iter();
         if let Some(header) = headers.next() {
@@ -50,11 +51,10 @@ impl fmt::Display for HeaderValueFmt<'_> {
     }
 }
 
-///`HeaderMap` extension trait
-pub trait HeaderMapClientIp {
+///`MetadataMap` extension trait
+pub trait MetadataMapClientIp {
     ///Retrieves FMT formatter for header value matching provided `key`
-    fn get_header_value_fmt(&self, key: impl http_ext::header::AsHeaderName) -> HeaderValueFmt<'_>;
-
+    fn get_header_value_fmt(&self, key: &str) -> MetadataValueFmt<'_>;
     ///Extracts leftmost client IP with no assumption.
     ///
     ///Note that this is generally not reliable as your client might be behind proxy
@@ -72,10 +72,10 @@ pub trait HeaderMapClientIp {
     fn extract_filtered_forwarded_ip(&self, filter: &impl Filter) -> Option<IpAddr>;
 }
 
-impl HeaderMapClientIp for http_ext::HeaderMap {
+impl MetadataMapClientIp for MetadataMap {
     #[inline(always)]
-    fn get_header_value_fmt(&self, key: impl http_ext::header::AsHeaderName) -> HeaderValueFmt<'_> {
-        HeaderValueFmt(self.get_all(key))
+    fn get_header_value_fmt(&self, key: &str) -> MetadataValueFmt<'_> {
+        MetadataValueFmt(self.get_all(key))
     }
 
     #[inline(always)]

@@ -22,4 +22,4 @@ jobs:
     with:
       min-rustc-version: "1.85.0"
       cargo-no-features: true
-      cargo-features: "http,axum08"
+      cargo-features: "http,axum08,tonic014"
