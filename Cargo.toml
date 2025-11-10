@@ -24,12 +24,20 @@ version = "1"
 #default-features = false
 optional = true
 
+[dependencies.axum08]
+package = "axum"
+default-features = false
+features = ["tokio"]
+version = "0.8"
+optional = true
+
 [features]
 http = ["dep:http"]
+axum08 = ["dep:axum08", "http"]
 
 [[test]]
 name = "http"
 required-features = ["http"]
 
 [package.metadata.docs.rs]
-features = ["http"]
+features = ["http", "axum08"]

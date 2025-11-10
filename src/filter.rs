@@ -16,6 +16,13 @@ pub trait Filter: Sized {
     }
 }
 
+impl Filter for () {
+    #[inline(always)]
+    fn is_match(&self, _: IpAddr) -> bool {
+        false
+    }
+}
+
 impl Filter for IpAddr {
     #[inline(always)]
     fn is_match(&self, ip: IpAddr) -> bool {
