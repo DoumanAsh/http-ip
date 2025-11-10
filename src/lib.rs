@@ -1,4 +1,4 @@
-//! Utilities to determine client IP
+//! Utilities to determine HTTP client's IP
 
 #![no_std]
 #![warn(missing_docs)]
@@ -6,3 +6,5 @@
 
 pub mod forwarded;
 pub mod filter;
+#[cfg(feature = "http")]
+pub mod http;

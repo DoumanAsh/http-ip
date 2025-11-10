@@ -18,3 +18,18 @@ include = [
 
 [dependencies]
 ip-cidr = "0.1"
+
+[dependencies.http]
+version = "1"
+#default-features = false
+optional = true
+
+[features]
+http = ["dep:http"]
+
+[[test]]
+name = "http"
+required-features = ["http"]
+
+[package.metadata.docs.rs]
+features = ["http"]

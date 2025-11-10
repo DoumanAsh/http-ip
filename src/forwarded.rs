@@ -13,7 +13,7 @@ const PAIR_SEP: char = '=';
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 ///Parsed node of the Forwarded header
 ///
-///See details https://datatracker.ietf.org/doc/html/rfc7239#section-4
+///See details <https://datatracker.ietf.org/doc/html/rfc7239#section-4>
 pub enum ForwardedNode<'a> {
     ///Proxy specified real IP address
     Ip(IpAddr),
@@ -87,7 +87,7 @@ pub enum ForwardedValue<'a> {
     Host(&'a str),
     ///String with protocol name
     ///
-    ///https://datatracker.ietf.org/doc/html/rfc7239#section-5.4
+    ///<https://datatracker.ietf.org/doc/html/rfc7239#section-5.4>
     Protocol(&'a str)
 }
 

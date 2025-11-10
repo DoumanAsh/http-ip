@@ -5,3 +5,7 @@
 [![Documentation](https://docs.rs/http-ip/badge.svg)](https://docs.rs/crate/http-ip/)
 
 Utilities to determine client IP
+
+## Features
+
+- `http` - Enables filter implementation using http's header map
