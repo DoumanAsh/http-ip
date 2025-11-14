@@ -137,4 +137,3 @@ pub const fn or<F1, F2>(left: F1, right: F2) -> Or<F1, F2> {
         right
     }
 }
-

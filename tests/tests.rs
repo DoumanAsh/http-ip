@@ -1,5 +1,6 @@
 use core::net::IpAddr;
 
+use http_ip::forwarded::{parse_x_forwarded_for, parse_x_forwarded_for_rev};
 use http_ip::forwarded::{parse_forwarded_for, parse_forwarded_for_rev};
 use http_ip::forwarded::{parse_forwarded, parse_forwarded_rev};
 use http_ip::forwarded::{ForwardedNode, ForwardedValue};
@@ -151,4 +152,31 @@ fn should_parse_multiple_entries_with_forwarded_for_rev() {
     let ip = ips.next().unwrap();
     let expected_ip: IpAddr = "127.0.0.1".parse().unwrap();
     assert_eq!(ForwardedNode::Ip(expected_ip), ip);
+}
+
+#[test]
+fn should_parse_x_forwarded_for() {
+    const IPS: &str = "203.0.113.195,2001:db8:85a3:8d3:1319:8a2e:370:7348,198.51.100.178";
+
+    let expected_ip1: IpAddr = "203.0.113.195".parse().unwrap();
+    let expected_ip2: IpAddr = "2001:db8:85a3:8d3:1319:8a2e:370:7348".parse().unwrap();
+    let expected_ip3: IpAddr = "198.51.100.178".parse().unwrap();
+
+    let mut ips = parse_x_forwarded_for_rev(IPS);
+    let ip = ips.next().unwrap();
+    assert_eq!(ForwardedNode::Ip(expected_ip3), ip);
+    let ip = ips.next().unwrap();
+    assert_eq!(ForwardedNode::Ip(expected_ip2), ip);
+    let ip = ips.next().unwrap();
+    assert_eq!(ForwardedNode::Ip(expected_ip1), ip);
+    assert!(ips.next().is_none());
+
+    let mut ips = parse_x_forwarded_for(IPS);
+    let ip = ips.next().unwrap();
+    assert_eq!(ForwardedNode::Ip(expected_ip1), ip);
+    let ip = ips.next().unwrap();
+    assert_eq!(ForwardedNode::Ip(expected_ip2), ip);
+    let ip = ips.next().unwrap();
+    assert_eq!(ForwardedNode::Ip(expected_ip3), ip);
+    assert!(ips.next().is_none());
 }

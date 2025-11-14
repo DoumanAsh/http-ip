@@ -33,6 +33,25 @@ impl<'a> ForwardedNode<'a> {
         }
     }
 
+    #[inline(always)]
+    ///Returns `ip` value if node is valid IP address
+    pub const fn ip(&self) -> Option<IpAddr> {
+        match self {
+            Self::Ip(ip) => Some(*ip),
+            _ => None
+        }
+    }
+
+    #[inline]
+    ///Parses X-Forwarded-For's `Node` identifier
+    pub fn parse_x_node(mut node: &'a str) -> Self {
+        node = node.trim();
+        match node.parse() {
+            Ok(ip) => ForwardedNode::Ip(ip),
+            Err(_) => ForwardedNode::Name(node)
+        }
+    }
+
     ///Parses `Node` identifier
     pub fn parse_node(mut node: &'a str) -> Self {
         node = node.trim_matches('"');
@@ -185,6 +204,23 @@ impl<'a, I: Iterator<Item = &'a str> + 'a> Iterator for ForwardedForIter<'a, I> 
     }
 }
 
+///Iterator over `X-Forwarded-For` header
+///
+///This header is not standard and iterator assumes it is simple list of IP addresses.
+pub struct XForwardedForIter<'a, I> {
+    components: I,
+    _lifetime: marker::PhantomData<&'a I>,
+}
+
+impl<'a, I: Iterator<Item = &'a str> + 'a> Iterator for XForwardedForIter<'a, I> {
+    type Item = ForwardedNode<'a>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        self.components.next().map(ForwardedNode::parse_x_node)
+    }
+}
+
 #[inline(always)]
 ///Parses provided string as `Forwarded` header
 ///
@@ -223,6 +259,24 @@ pub fn parse_forwarded_for<'a>(value: &'a str) -> ForwardedForIter<'a, impl Iter
 pub fn parse_forwarded_for_rev<'a>(value: &'a str) -> ForwardedForIter<'a, impl Iterator<Item = &'a str>> {
     ForwardedForIter {
         components: value.rsplit([FORWARDED_SEP, ENTRY_SEP]),
+        _lifetime: marker::PhantomData,
+    }
+}
+
+#[inline(always)]
+///Parses provided string as `X-Forwarded-For` header returning all nodes in order
+pub fn parse_x_forwarded_for<'a>(value: &'a str) -> XForwardedForIter<'a, impl Iterator<Item = &'a str>> {
+    XForwardedForIter {
+        components: value.split(FORWARDED_SEP),
+        _lifetime: marker::PhantomData,
+    }
+}
+
+#[inline(always)]
+///Parses provided string as `X-Forwarded-For` header returning all nodes in reverse order
+pub fn parse_x_forwarded_for_rev<'a>(value: &'a str) -> XForwardedForIter<'a, impl Iterator<Item = &'a str>> {
+    XForwardedForIter {
+        components: value.rsplit(FORWARDED_SEP),
         _lifetime: marker::PhantomData,
     }
 }

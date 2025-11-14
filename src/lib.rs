@@ -6,7 +6,7 @@
 //! - `axum08` - Enables `axum` extractor implementation for `0.8.x`;
 //! - `tonic014` - Enables `tonic` extension implementation for `0.14.x`.
 
-#![no_std]
+//#![no_std]
 #![warn(missing_docs)]
 #![allow(clippy::style)]
 

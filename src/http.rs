@@ -3,13 +3,14 @@
 use core::fmt;
 use core::net::IpAddr;
 
-use crate::forwarded::{self, parse_forwarded_for, parse_forwarded_for_rev};
+use crate::forwarded::{self, parse_forwarded_for, parse_forwarded_for_rev, parse_x_forwarded_for, parse_x_forwarded_for_rev};
 use crate::filter::Filter;
 use crate::shared::FALLBACK_STR;
 
 ///Re-export of [http](https://crates.io/crates/http)
 pub use http as http_ext;
 use http_ext::header::FORWARDED;
+const X_FORWARDED_FOR: http_ext::header::HeaderName = http_ext::header::HeaderName::from_static("x-forwarded-for");
 
 ///FMT formatter for header values
 pub struct HeaderValueFmt<'a>(http_ext::header::GetAll<'a, http_ext::header::HeaderValue>);
@@ -80,47 +81,15 @@ impl HeaderMapClientIp for http_ext::HeaderMap {
 
     #[inline(always)]
     fn extract_leftmost_forwarded_ip(&self) -> Option<IpAddr> {
-        self.get_all(FORWARDED)
-            .into_iter()
-            .next()
-            .and_then(|header| header.to_str().ok())
-            .and_then(|header| parse_forwarded_for(header).next())
-            .and_then(|node| match node {
-                forwarded::ForwardedNode::Ip(ip) => Some(ip),
-                _ => None
-            })
+        crate::shared::impl_extract_leftmost_forwarded_ip!(self)
     }
 
     #[inline(always)]
     fn extract_rightmost_forwarded_ip(&self) -> Option<IpAddr> {
-        self.get_all(FORWARDED)
-            .into_iter()
-            .next_back()
-            .and_then(|header| header.to_str().ok())
-            .and_then(|header| parse_forwarded_for_rev(header).next())
-            .and_then(|node| match node {
-                forwarded::ForwardedNode::Ip(ip) => Some(ip),
-                _ => None
-            })
+        crate::shared::impl_extract_rightmost_forwarded_ip!(self)
     }
 
     fn extract_filtered_forwarded_ip(&self, filter: &impl Filter) -> Option<IpAddr> {
-        let forwarded = self.get_all(FORWARDED)
-                            .into_iter()
-                            .rev()
-                            .filter_map(|header| header.to_str().ok()).flat_map(|header| parse_forwarded_for_rev(header));
-
-        for node in forwarded {
-            match node {
-                forwarded::ForwardedNode::Ip(ip) => if filter.is_match(ip) {
-                    continue
-                } else {
-                    return Some(ip)
-                },
-                _ => return None,
-            }
-        }
-
-        None
+        crate::shared::impl_extract_filtered_forwarded_ip!(self, filter)
     }
 }

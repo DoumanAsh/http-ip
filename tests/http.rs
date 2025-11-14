@@ -1,5 +1,6 @@
 use http::HeaderMap;
 use http::header::FORWARDED;
+const X_FORWARDED_FOR: http::header::HeaderName = http::header::HeaderName::from_static("x-forwarded-for");
 
 use http_ip::http::HeaderMapClientIp;
 use http_ip::filter::{self, Cidr};
@@ -12,6 +13,8 @@ fn should_format_header_map() {
 
     headers.append(FORWARDED, "By=\"[2001:db8:cafe::17]:4711\",For=127.0.0.1".parse().unwrap());
     headers.append(FORWARDED, "For=unknown,For=_hidden".parse().unwrap());
+    //x-forwarded-for is not used when Forwarded is present
+    headers.append(X_FORWARDED_FOR, "203.0.113.195,2001:db8:85a3:8d3:1319:8a2e:370:7348,198.51.100.178".parse().unwrap());
 
     let display = headers.get_header_value_fmt(FORWARDED).to_string();
     assert_eq!(display, "By=\"[2001:db8:cafe::17]:4711\",For=127.0.0.1 ,For=unknown,For=_hidden");
@@ -23,6 +26,8 @@ fn should_extract_left_most_ip_from_header_map() {
 
     headers.append(FORWARDED, "By=\"[2001:db8:cafe::17]:4711\",For=127.0.0.1".parse().unwrap());
     headers.append(FORWARDED, "For=unknown,For=_hidden".parse().unwrap());
+    //x-forwarded-for is not used when Forwarded is present
+    headers.append(X_FORWARDED_FOR, "203.0.113.195,2001:db8:85a3:8d3:1319:8a2e:370:7348,198.51.100.178".parse().unwrap());
 
     let ip = headers.extract_leftmost_forwarded_ip().expect("to have IP");
     let expected_ip: IpAddr = "127.0.0.1".parse().unwrap();
@@ -35,11 +40,23 @@ fn should_not_extract_left_most_ip_from_header_map() {
 
     headers.append(FORWARDED, "By=\"[2001:db8:cafe::17]:4711\",For=_hidden".parse().unwrap());
     headers.append(FORWARDED, "For=unknown,For=127.0.0.1".parse().unwrap());
+    //x-forwarded-for is not used when Forwarded is present
+    headers.append(X_FORWARDED_FOR, "203.0.113.195,2001:db8:85a3:8d3:1319:8a2e:370:7348,198.51.100.178".parse().unwrap());
 
     let result = headers.extract_leftmost_forwarded_ip();
     assert!(result.is_none(), "Unexpected IP={:?}", result);
 }
 
+#[test]
+fn should_extract_x_left_most_ip_from_header_map() {
+    let mut headers = HeaderMap::new();
+
+    headers.append(X_FORWARDED_FOR, "203.0.113.195,2001:db8:85a3:8d3:1319:8a2e:370:7348,198.51.100.178".parse().unwrap());
+
+    let ip = headers.extract_leftmost_forwarded_ip().expect("to have IP");
+    let expected_ip: IpAddr = "203.0.113.195".parse().unwrap();
+    assert_eq!(expected_ip, ip);
+}
 
 #[test]
 fn should_extract_right_most_ip_from_header_map() {
@@ -47,6 +64,8 @@ fn should_extract_right_most_ip_from_header_map() {
 
     headers.append(FORWARDED, "By=\"[2001:db8:cafe::17]:4711\",For=_hidden".parse().unwrap());
     headers.append(FORWARDED, "For=unknown,For=127.0.0.1".parse().unwrap());
+    //x-forwarded-for is not used when Forwarded is present
+    headers.append(X_FORWARDED_FOR, "203.0.113.195,2001:db8:85a3:8d3:1319:8a2e:370:7348,198.51.100.178".parse().unwrap());
 
     let ip = headers.extract_rightmost_forwarded_ip().expect("to have IP");
     let expected_ip: IpAddr = "127.0.0.1".parse().unwrap();
@@ -59,9 +78,22 @@ fn should_not_extract_right_most_ip_from_header_map() {
 
     headers.append(FORWARDED, "By=\"[2001:db8:cafe::17]:4711\",For=127.0.0.1".parse().unwrap());
     headers.append(FORWARDED, "For=unknown,For=_hidden".parse().unwrap());
+    //x-forwarded-for is not used when Forwarded is present
+    headers.append(X_FORWARDED_FOR, "203.0.113.195,2001:db8:85a3:8d3:1319:8a2e:370:7348,198.51.100.178".parse().unwrap());
 
     let result = headers.extract_rightmost_forwarded_ip();
     assert!(result.is_none(), "Unexpected IP={:?}", result);
+}
+
+#[test]
+fn should_extract_x_right_most_ip_from_header_map() {
+    let mut headers = HeaderMap::new();
+
+    headers.append(X_FORWARDED_FOR, "203.0.113.195,2001:db8:85a3:8d3:1319:8a2e:370:7348,198.51.100.178".parse().unwrap());
+
+    let ip = headers.extract_rightmost_forwarded_ip().expect("to have IP");
+    let expected_ip: IpAddr = "198.51.100.178".parse().unwrap();
+    assert_eq!(expected_ip, ip);
 }
 
 #[test]
@@ -70,6 +102,21 @@ fn should_extract_filtered_by_ip_from_header_map() {
 
     headers.append(FORWARDED, "By=\"[2001:db8:cafe::17]:4711\",For=127.0.0.1".parse().unwrap());
     headers.append(FORWARDED, "For=192.168.0.1,For=10.0.0.1".parse().unwrap());
+    //x-forwarded-for is not used when Forwarded is present
+    headers.append(X_FORWARDED_FOR, "203.0.113.195,2001:db8:85a3:8d3:1319:8a2e:370:7348,198.51.100.178".parse().unwrap());
+
+    let filtered_ip: IpAddr = "10.0.0.1".parse().unwrap();
+    let expected_ip: IpAddr = "192.168.0.1".parse().unwrap();
+    let result = headers.extract_filtered_forwarded_ip(&filtered_ip).expect("to get ip");
+    assert_eq!(result, expected_ip);
+}
+
+#[test]
+fn should_extract_x_filtered_by_ip_from_header_map() {
+    let mut headers = HeaderMap::new();
+
+    headers.append(X_FORWARDED_FOR, "127.0.0.1".parse().unwrap());
+    headers.append(X_FORWARDED_FOR, "192.168.0.1,10.0.0.1".parse().unwrap());
 
     let filtered_ip: IpAddr = "10.0.0.1".parse().unwrap();
     let expected_ip: IpAddr = "192.168.0.1".parse().unwrap();
@@ -83,6 +130,8 @@ fn should_extract_filtered_by_cidr_from_header_map() {
 
     headers.append(FORWARDED, "By=\"[2001:db8:cafe::17]:4711\",For=127.0.0.1".parse().unwrap());
     headers.append(FORWARDED, "For=192.168.0.1,For=10.0.0.1".parse().unwrap());
+    //x-forwarded-for is not used when Forwarded is present
+    headers.append(X_FORWARDED_FOR, "203.0.113.195,2001:db8:85a3:8d3:1319:8a2e:370:7348,198.51.100.178".parse().unwrap());
 
     let filtered_ip = Cidr::from_text("10.0.0.0/31").expect("to parse");
     let expected_ip: IpAddr = "192.168.0.1".parse().unwrap();
@@ -101,6 +150,8 @@ fn should_not_extract_filtered_by_cidr_from_header_map() {
 
     headers.append(FORWARDED, "By=\"[2001:db8:cafe::17]:4711\",For=127.0.0.1".parse().unwrap());
     headers.append(FORWARDED, "For=192.168.0.1,For=10.0.0.1".parse().unwrap());
+    //x-forwarded-for is not used when Forwarded is present
+    headers.append(X_FORWARDED_FOR, "203.0.113.195,2001:db8:85a3:8d3:1319:8a2e:370:7348,198.51.100.178".parse().unwrap());
 
     let filtered_ip = Cidr::from_text("10.0.0.0/32").expect("to parse");
     let expected_ip: IpAddr = "10.0.0.1".parse().unwrap();
@@ -114,6 +165,8 @@ fn should_extract_filtered_by_cidr_from_header_map_with_or() {
 
     headers.append(FORWARDED, "By=\"[2001:db8:cafe::17]:4711\",For=127.0.0.1".parse().unwrap());
     headers.append(FORWARDED, "For=192.168.0.1,For=10.0.0.1".parse().unwrap());
+    //x-forwarded-for is not used when Forwarded is present
+    headers.append(X_FORWARDED_FOR, "203.0.113.195,2001:db8:85a3:8d3:1319:8a2e:370:7348,198.51.100.178".parse().unwrap());
 
     let filtered_ip = Cidr::from_text("10.0.0.0/32").expect("to parse");
     let filtered_ip2: IpAddr = "10.0.0.1".parse().expect("to parse");
