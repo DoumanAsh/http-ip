@@ -51,16 +51,8 @@ macro_rules! impl_extract_filtered_forwarded_ip {
                                  .into_iter()
                                  .rev()
                                  .filter_map(|header| header.to_str().ok()).flat_map(|header| parse_x_forwarded_for_rev(header));
-            for node in forwarded {
-                match node {
-                    forwarded::ForwardedNode::Ip(ip) => if $filter.is_match(ip) {
-                        continue
-                    } else {
-                        return Some(ip)
-                    },
-                    _ => return None,
-                }
-            }
+
+            return $crate::find_next_ip_after_filter(forwarded, $filter);
         }
 
         None
