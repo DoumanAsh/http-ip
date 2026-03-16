@@ -11,6 +11,7 @@ Utilities to determine HTTP client's IP
 - `http` - Enables filter implementation using http's header map;
 - `axum08` - Enables `axum` extractor implementation for `0.8.x`;
 - `tonic014` - Enables `tonic` extension implementation for `0.14.x`.
+- `ohkami024` - Enables `ohkami` extension implementation for `0.24.x`.
 
 ## Example
 

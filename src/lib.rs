@@ -5,6 +5,7 @@
 //! - `http` - Enables filter implementation using http's header map;
 //! - `axum08` - Enables `axum` extractor implementation for `0.8.x`;
 //! - `tonic014` - Enables `tonic` extension implementation for `0.14.x`.
+//! - `ohkami024` - Enables `ohkami` extension implementation for `0.24.x`.
 //!
 //! ## Example
 //!
@@ -48,6 +49,8 @@ pub mod http;
 pub mod axum08;
 #[cfg(feature = "tonic014")]
 pub mod tonic014;
+#[cfg(feature = "ohkami024")]
+pub mod ohkami024;
 
 #[inline]
 ///Determines next IP among `nodes` iterator after applying filter
