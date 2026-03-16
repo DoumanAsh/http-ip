@@ -1,6 +1,6 @@
 [package]
 name = "http-ip"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Douman <douman@gmx.se>"]
 edition = "2024"
 rust-version = "1.85.0"
@@ -57,6 +57,5 @@ required-features = ["http"]
 name = "tonic014"
 required-features = ["tonic014"]
 
-
 [package.metadata.docs.rs]
-features = ["http", "axum08", "tonic014"]
+features = ["http", "axum08", "tonic014", "ohkami024"]

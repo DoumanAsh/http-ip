@@ -2,8 +2,9 @@
 use core::{fmt, marker};
 use core::net::IpAddr;
 
+use crate::find_next_ip_after_filter;
 use crate::filter::Filter;
-use crate::forwarded::{self, parse_forwarded_for_rev};
+use crate::forwarded::parse_forwarded_for_rev;
 use ohkami024::{FromRequest, Request};
 
 #[repr(transparent)]
@@ -41,23 +42,19 @@ impl<F: Filter> fmt::Debug for ClientIp<F> {
 }
 
 impl<'req, F: Send + Sync + Filter + 'static> FromRequest<'req> for ClientIp<F> {
+    ///This extractor will not fail
     type Error = core::convert::Infallible;
+    ///Extracts `Forwarded` header, or do nothing if not available
+    ///
+    ///If no IP can be determined due to filter or obfuscation, sets `ClientIp::inner` to `None`
     fn from_request(req: &'req Request) -> Option<Result<Self, Self::Error>> {
         let filter = req.context.get::<F>()?;
         //This library is a mess of undocumented functionality, but this method is basically shortcut to getting Forwarded with both possible cases
-        if let Some(value) = req.headers.forwarded() {
-            for node in parse_forwarded_for_rev(value) {
-                match node {
-                    forwarded::ForwardedNode::Ip(ip) => if filter.is_match(ip) {
-                        continue
-                    } else {
-                        return Some(Ok(ClientIp::new(Some(ip))));
-                    },
-                    //non-IP cannot be matched so assume obfuscation hence unable to determine how to filter
-                    _ => break,
-                }
-            }
+        if let Some(ip) = req.headers.forwarded().and_then(|value| find_next_ip_after_filter(parse_forwarded_for_rev(value), filter)) {
+            Some(Ok(ClientIp::new(Some(ip))))
+        } else {
+            //do not return None as it will cause 404 by default, it is best to have your control over this behaviour
+            Some(Ok(ClientIp::new(None)))
         }
-        Some(Ok(ClientIp::new(None)))
     }
 }
