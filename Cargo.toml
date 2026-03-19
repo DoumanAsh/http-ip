@@ -1,6 +1,6 @@
 [package]
 name = "http-ip"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Douman <douman@gmx.se>"]
 edition = "2024"
 rust-version = "1.85.0"
@@ -40,7 +40,7 @@ optional = true
 [dependencies.ohkami024]
 package = "ohkami"
 default-features = false
-version = "0.24"
+version = "0.24.7"
 optional = true
 
 [features]

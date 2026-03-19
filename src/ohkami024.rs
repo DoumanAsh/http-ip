@@ -5,7 +5,8 @@ use core::net::IpAddr;
 use crate::find_next_ip_after_filter;
 use crate::filter::Filter;
 use crate::forwarded::parse_forwarded_for_rev;
-use ohkami024::{FromRequest, Request};
+use ohkami024::{FangProc, Fang};
+use ohkami024::{FromRequest, Request, Response};
 
 #[repr(transparent)]
 #[derive(Copy, Clone)]
@@ -56,5 +57,52 @@ impl<'req, F: Send + Sync + Filter + 'static> FromRequest<'req> for ClientIp<F> 
             //do not return None as it will cause 404 by default, it is best to have your control over this behaviour
             Some(Ok(ClientIp::new(None)))
         }
+    }
+}
+
+#[derive(Clone)]
+///Client IP modification middleware implementing [Fang](https://docs.rs/ohkami/latest/ohkami/fang/trait.Fang.html)
+pub struct ClientIpMiddleware<F> {
+    filter: F,
+}
+
+impl<F: Filter + Clone + 'static> ClientIpMiddleware<F> {
+    #[inline(always)]
+    ///Creates new instance
+    pub const fn new(filter: F) -> Self {
+        Self {
+            filter
+        }
+    }
+}
+
+impl<F: Filter + Clone + 'static, I: FangProc> Fang<I> for ClientIpMiddleware<F> {
+    type Proc = ClientIpMiddlewareProc<I, F>;
+    #[inline(always)]
+    fn chain(&self, inner: I) -> Self::Proc {
+        ClientIpMiddlewareProc {
+            inner,
+            filter: self.filter.clone(),
+        }
+    }
+}
+
+///Tracing middleware implementing [FangProc](https://docs.rs/ohkami/latest/ohkami/fang/trait.FancProc.html)
+pub struct ClientIpMiddlewareProc<I, F> {
+    inner: I,
+    filter: F,
+}
+
+impl<I: FangProc, F: Filter + 'static> FangProc for ClientIpMiddlewareProc<I, F> {
+    #[inline(always)]
+    fn bite<'b>(&'b self, req: &'b mut Request) -> impl Future<Output = Response> {
+        if req.ip.is_unspecified() {
+            //Assume ip is set to correct one if it is not default, so we try to look up Forwarded header only if user cannot know IP yet
+            if let Some(ip) = req.headers.forwarded().and_then(|value| find_next_ip_after_filter(parse_forwarded_for_rev(value), &self.filter)) {
+                req.ip = ip;
+            }
+        }
+
+        self.inner.bite(req)
     }
 }
