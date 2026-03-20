@@ -1,6 +1,6 @@
 //!Filtering of IP addresses
 
-use core::fmt;
+use core::{marker, fmt};
 use core::net::{IpAddr, SocketAddr};
 
 ///Interface to define function that filters out IP address
@@ -48,6 +48,32 @@ impl<F1: Filter, F2: Filter> Filter for Or<F1, F2> {
     #[inline(always)]
     fn is_match(&self, ip: IpAddr) -> bool {
         self.left.is_match(ip) || self.right.is_match(ip)
+    }
+}
+
+///Collection of filters which are matched with `OR` condition
+///
+///`I` must be type that implements `AsRef<[impl Filter]>`
+pub struct CollectionOr<I, F> {
+    collection: I,
+    _filter: marker::PhantomData<F>,
+}
+
+impl<F: Filter, I: AsRef<[F]>> CollectionOr<I, F> {
+    #[inline(always)]
+    ///Creates new collection
+    pub const fn new(collection: I) -> Self {
+        Self {
+            collection,
+            _filter: marker::PhantomData
+        }
+    }
+}
+
+impl<F: Filter, I: AsRef<[F]>> Filter for CollectionOr<I, F> {
+    #[inline(always)]
+    fn is_match(&self, ip: IpAddr) -> bool {
+        self.collection.as_ref().iter().any(|filter| filter.is_match(ip))
     }
 }
 
@@ -136,4 +162,10 @@ pub const fn or<F1, F2>(left: F1, right: F2) -> Or<F1, F2> {
         left,
         right
     }
+}
+
+#[inline]
+///Creates new `OR` filter out of the `collection`
+pub const fn collection_or<F: Filter, I: AsRef<[F]>>(collection: I) -> CollectionOr<I, F> {
+    CollectionOr::new(collection)
 }

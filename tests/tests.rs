@@ -198,4 +198,8 @@ fn should_parse_forwarded_with_real_life_scenario() {
     let filter = http_ip::filter::or(CIDR1, CIDR2);
     let ip = find_next_ip_after_filter(parse_forwarded_for_rev(FORWARDED), &filter).expect("Find ip");
     assert_eq!(ip, EXPECTED_IP);
+
+    let filter = http_ip::filter::collection_or([CIDR1, CIDR2]);
+    let ip = find_next_ip_after_filter(parse_forwarded_for_rev(FORWARDED), &filter).expect("Find ip");
+    assert_eq!(ip, EXPECTED_IP);
 }
