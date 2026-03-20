@@ -1,9 +1,10 @@
-use core::net::IpAddr;
+use core::net::{IpAddr, Ipv4Addr};
 
 use http_ip::forwarded::{parse_x_forwarded_for, parse_x_forwarded_for_rev};
 use http_ip::forwarded::{parse_forwarded_for, parse_forwarded_for_rev};
 use http_ip::forwarded::{parse_forwarded, parse_forwarded_rev};
 use http_ip::forwarded::{ForwardedNode, ForwardedValue};
+use http_ip::find_next_ip_after_filter;
 
 #[test]
 fn should_parse_single_forwarded_entry() {
@@ -179,4 +180,22 @@ fn should_parse_x_forwarded_for() {
     let ip = ips.next().unwrap();
     assert_eq!(ForwardedNode::Ip(expected_ip3), ip);
     assert!(ips.next().is_none());
+}
+
+#[test]
+fn should_parse_forwarded_with_real_life_scenario() {
+    const FORWARDED: &str = r#"for="199.179.82.145";proto=https, for="34.54.242.13";proto=https,for="34.34.226.23;proto=https"#;
+    const CIDR1: http_ip::filter::Cidr = match http_ip::filter::Cidr::from_text("34.54.242.0/24") {
+        Ok(cidr) => cidr,
+        Err(_) => panic!("I cannot fail"),
+    };
+    const CIDR2: http_ip::filter::Cidr = match http_ip::filter::Cidr::from_text("34.34.226.0/24") {
+        Ok(cidr) => cidr,
+        Err(_) => panic!("I cannot fail"),
+    };
+    const EXPECTED_IP: IpAddr = IpAddr::V4(Ipv4Addr::new(199, 179, 82, 145));
+
+    let filter = http_ip::filter::or(CIDR1, CIDR2);
+    let ip = find_next_ip_after_filter(parse_forwarded_for_rev(FORWARDED), &filter).expect("Find ip");
+    assert_eq!(ip, EXPECTED_IP);
 }
