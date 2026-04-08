@@ -71,6 +71,10 @@ pub trait MetadataMapClientIp {
     ///
     ///Returns `None` if IP is not provided or obfuscated
     fn extract_filtered_forwarded_ip(&self, filter: &impl Filter) -> Option<IpAddr>;
+    ///Extracts client ip taking rightmost, after filtering out any IP matching `filter` after skipping `skip` amount of IPs
+    ///
+    ///Returns `None` if IP is not provided or obfuscated
+    fn extract_filtered_forwarded_ip_after(&self, skip: usize, filter: &impl Filter) -> Option<IpAddr>;
 }
 
 impl MetadataMapClientIp for MetadataMap {
@@ -89,7 +93,12 @@ impl MetadataMapClientIp for MetadataMap {
         crate::shared::impl_extract_rightmost_forwarded_ip!(self)
     }
 
+    #[inline(always)]
     fn extract_filtered_forwarded_ip(&self, filter: &impl Filter) -> Option<IpAddr> {
-        crate::shared::impl_extract_filtered_forwarded_ip!(self, filter)
+        self.extract_filtered_forwarded_ip_after(0, filter)
+    }
+
+    fn extract_filtered_forwarded_ip_after(&self, skip: usize, filter: &impl Filter) -> Option<IpAddr> {
+        crate::shared::impl_extract_filtered_forwarded_ip!(self, filter, skip)
     }
 }

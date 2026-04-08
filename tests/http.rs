@@ -138,9 +138,14 @@ fn should_extract_filtered_by_cidr_from_header_map() {
     let result = headers.extract_filtered_forwarded_ip(&filtered_ip).expect("to get ip");
     assert_eq!(result, expected_ip);
 
-    let filtered_ip = Cidr::from_text("10.0.0.0/1").expect("to parse");
+    let filtered_ip = Cidr::from_text("10.0.0.0/24").expect("to parse");
     let expected_ip: IpAddr = "192.168.0.1".parse().unwrap();
     let result = headers.extract_filtered_forwarded_ip(&filtered_ip).expect("to get ip");
+    assert_eq!(result, expected_ip);
+
+    let filtered_ip = Cidr::from_text("10.0.0.0/24").expect("to parse");
+    let expected_ip: IpAddr = "127.0.0.1".parse().unwrap();
+    let result = headers.extract_filtered_forwarded_ip_after(2, &filtered_ip).expect("to get ip");
     assert_eq!(result, expected_ip);
 }
 

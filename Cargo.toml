@@ -1,6 +1,6 @@
 [package]
 name = "http-ip"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["Douman <douman@gmx.se>"]
 edition = "2024"
 rust-version = "1.85.0"

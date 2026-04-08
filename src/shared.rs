@@ -27,14 +27,14 @@ macro_rules! impl_extract_rightmost_forwarded_ip {
 }
 
 macro_rules! impl_extract_filtered_forwarded_ip {
-    ($this:expr, $filter:expr) => {{
+    ($this:expr, $filter:expr, $skip:expr) => {{
         let forwarded = $this.get_all(FORWARDED)
                              .into_iter()
                              .rev()
                              .filter_map(|header| header.to_str().ok()).flat_map(|header| parse_forwarded_for_rev(header));
 
         let mut forwarded_found = false;
-        for node in forwarded {
+        for node in forwarded.skip($skip) {
             forwarded_found = true;
             match node {
                 forwarded::ForwardedNode::Ip(ip) => if $filter.is_match(ip) {
@@ -52,7 +52,7 @@ macro_rules! impl_extract_filtered_forwarded_ip {
                                  .rev()
                                  .filter_map(|header| header.to_str().ok()).flat_map(|header| parse_x_forwarded_for_rev(header));
 
-            return $crate::find_next_ip_after_filter(forwarded, $filter);
+            return $crate::find_next_ip_after_filter(forwarded.skip($skip), $filter);
         }
 
         None
